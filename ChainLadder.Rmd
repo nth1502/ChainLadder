@@ -1,0 +1,69 @@
+---
+title: "ChainLadder"
+author: "Trung-Hieu Nguyen"
+date: "October 1, 2015"
+output: html_document
+---
+Data is obtained from ACTL30004 Actuarial statistics Lecture slides.  
+In the process of improvement.
+
+Reference: Computational Actuarial Actuarial Science with R by  Arthur Charpentier.
+
+#Create data frame
+Only need to change input within ### frames.  
+Future immprovement: Develope import method from Excel.
+```{r}
+############################################
+#The size of dataframe 
+n <- 6
+#The incremtal is read rowwise
+inc.paid <- c(566,483,221,137,53,23,
+              501,492,193,159,64,
+              543,512,232,184,
+              652,671,310,
+              739,740,
+              752)
+originf <- factor(rep(1997:2002,n:1))
+dev <- sequence(n:1)
+############################################
+
+#This is so called normalised data
+claims <- data.frame(originf, dev, inc.paid)
+
+#Present normalised data in dev triangle
+inc.triangle <- with(claims,{
+    M <- matrix(nrow = n, ncol = n, 
+                dimnames = list(origin = levels(originf), dev = 1:n))
+    #this read inc.paid row-triangle-wise into M
+    M[cbind(originf,dev)] <- inc.paid
+    M
+})
+```
+
+#Basic Chain Ladder method:
+```{r}
+#Cummulative triangle
+(cum.triangle <- t(apply(inc.triangle, 1, cumsum)))
+
+#Return the latest cummulative paid of all origin years 
+(latest.paid <- cum.triangle[row(cum.triangle) == n-col(cum.triangle)+1])
+
+#Developemnt factor
+f <- sapply((n-1):1, function(i) {
+    sum(cum.triangle[1:i, n-i+1]) / sum(cum.triangle[1:i, n-i])
+    })
+#tail factor
+tail <- 1
+(f <- c(f, tail))
+
+#Return cumulative full traingle
+fullcum.triangle <- cum.triangle
+for (k in 1:(n-1)) {
+    fullcum.triangle[(n-k+1):n, k+1] <- fullcum.triangle[(n-k+1):n,k]*f[k]
+}
+fullcum.triangle
+
+#Return incremetal full traingle###Problem occured###
+(fullinc.triangle <- t(apply(fullcum.triangle, 1, diff)))
+```
+
